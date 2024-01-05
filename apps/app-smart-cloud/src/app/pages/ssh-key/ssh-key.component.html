@@ -1,0 +1,183 @@
+<page-header [extra]="extra" [content]="content" [breadcrumb]="breadcrumb" [action]="action"
+             [title]="'SSH Key'">
+  <ng-template #breadcrumb>
+    <nz-breadcrumb>
+      <nz-breadcrumb-item>Home</nz-breadcrumb-item>
+      <nz-breadcrumb-item> SSH Key</nz-breadcrumb-item>
+    </nz-breadcrumb>
+  </ng-template>
+  <ng-template #action>
+    <div class="alain-custom-action text-right">
+      <region-select-dropdown (valueChanged)="onRegionChange($event)"></region-select-dropdown>
+      <project-select-dropdown [regionId]="regionId" (valueChanged)="projectChange($event)"></project-select-dropdown>
+    </div>
+  </ng-template>
+  <ng-template #content>
+    <div *ngIf="!isBegin" nz-row class="mb-md">
+      <nz-input-group nzSearch nzSize="default" [nzAddOnAfter]="suffixButton">
+        <input #searchBox type="text" nz-input placeholder="Tìm kiến keypair" style="width: 350px"/>
+        <ng-template #suffixButton>
+          <button nz-button [nzType]="'primary'" nzSearch (click)="search(searchBox.value)">
+            <i nz-icon nzType="search"></i>
+            Tim kiếm
+          </button>
+        </ng-template>
+      </nz-input-group>
+    </div>
+  </ng-template>
+  <ng-template #extra>
+    <button *ngIf="!isBegin" (click)="createKey()" nz-button nzType="primary" style="
+            border: 1px solid #52c41a;
+            border-radius: 2px;
+            background-color: #52c41a;
+          "><i nz-icon nzType="plus"></i> Tạo mới
+    </button>
+  </ng-template>
+
+</page-header>
+
+<nz-card>
+  <ng-container [ngSwitch]="isBegin">
+    <ng-container *ngSwitchCase=false><!--  màn khởi tạo-->
+      <!--      <h2>Danh sách SSH Key</h2>-->
+
+      <!--  Bảng-->
+      <nz-table #rowSelectionTable [nzFrontPagination]="false" nzShowPagination nzShowSizeChanger [nzData]="listOfData"
+                [nzTotal]="total" [nzPageSize]="size" (nzPageSizeChange)="onPageSizeChange($event)"
+                (nzPageIndexChange)="onPageIndexChange($event)" [nzLoading]="loading">
+        <thead>
+        <tr>
+          <th>Tên keypaird</th>
+          <th>Finger print</th>
+          <th>Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let data of listOfData">
+          <td (click)="detailKey(data)">{{ data.name }}</td>
+          <td (click)="detailKey(data)">{{ data.fingerprint }}</td>
+          <td>
+            <button (click)="deleteKey(data)" nz-button nzType="primary" nzDanger style="border-radius: 13%">
+              Xóa
+            </button>
+          </td>
+        </tr>
+        <nz-modal [(nzVisible)]="isVisibleDelete" nzTitle="Xác nhận xóa SSH Key"
+                  (nzOnCancel)="handleCancel(null)"
+                  (nzOnOk)="handleDelete(data.id)">
+          <ng-container *nzModalContent>
+            <h3 style="font-weight: normal;">Quý khách có chắc chắn muốn xóa SSH Key?</h3>
+          </ng-container>
+        </nz-modal>
+        </tbody>
+      </nz-table>
+    </ng-container>
+    <ng-container *ngSwitchDefault>
+      <nz-result [nzIcon]="customIcon" nzTitle="SSH KEY - Ổ Khóa truy cập dịch vụ"
+                 nzSubTitle="Dịch vụ hỗ trợ người dùng xác thực dịch vụ một cách bảo mật, an toàn tuyệt đối">
+        <ng-template #customIcon>
+          <img src="assets/imgs/ssh-key.png" alt="Custom Icon">
+        </ng-template>
+        <div nz-result-extra>
+          <button (click)="createKey()" nz-button nzType="primary">Khởi tạo ngay</button>
+        </div>
+      </nz-result>
+    </ng-container>
+  </ng-container>
+
+  <!-- tạo mới -->
+  <nz-form-control>
+    <form #myForm="ngForm" nz-form [formGroup]="form" (ngSubmit)="submitForm()" [nzLayout]="'vertical'">
+      <nz-modal [(nzVisible)]="isVisibleCreate" nzTitle="Tạo mới Keypair" [nzOkDisabled]="form.invalid"
+                (nzOnCancel)="handleCancel(myForm)"
+                (nzOnOk)="handleCreate(myForm)" [nzStyle]="modalStyle" nzOkText="Xác nhận"
+                nzCancelText="Hủy bỏ">
+        <ng-container *nzModalContent>
+          <nz-tabset (nzSelectedIndexChange)="onTabchange($event, myForm)">
+            <nz-tab nzTitle="Tạo SSH Key mới">
+              <div class="mb-5 mt-5 pt-3 pb-3" style="
+              border-style: solid;
+              border-width: 1px;
+              border-color: #0493fa;
+              background-color: #d6eeff;
+            ">
+                <Space>
+                <span class="mt-2 mb-2 ml-3 mr-1" nz-icon nzType="info-circle" nzTheme="fill"
+                      style="color: blue"></span>
+                  Private key sẽ được gửi vào email khách hàng đăng ký tài khoản.
+                  Quý khách lưu ý giữ private key này an toàn bảo mật cho server.
+                </Space>
+              </div>
+              <h4>
+                Tên key pair
+                <span nz-typography nzType="danger" style="color: red">*</span>
+              </h4>
+              <nz-input-group>
+                <nz-form-item>
+                  <nz-form-control
+                    nzErrorTip="Tên keypair không được chứa ký tự đặc biệt, chữ cái phải trong bảng tiếng anh">
+                    <textarea nz-input [nzAutosize]="{ minRows: 1 }" placeholder="Vui lòng nhập thông tin"
+                              maxlength="20" formControlName="keypair_name_1"></textarea>
+                  </nz-form-control>
+                </nz-form-item>
+              </nz-input-group>
+            </nz-tab>
+            <nz-tab nzTitle="Nhập key có sẵn">
+              <div class="mb-5 mt-5 pt-3 pb-3" style="
+              border-style: solid;
+              border-color: #0493fa;
+              background-color: #d6eeff;
+              border-width: 1px;
+            ">
+                <Space>
+                <span class="mt-2 mb-2 ml-3 mr-1" nz-icon nzType="info-circle" nzTheme="fill"
+                      style="color: blue"></span>
+                  Chức năng được dùng khi quý khách đã có sẵn cặp SSH key.Vui lòng nhập Public Key để tạo vào tài khoản
+                  của quý khách.
+                </Space>
+              </div>
+              <h4>
+                Tên key pair
+                <span nz-typography nzType="danger" style="color: red">*</span>
+              </h4>
+              <nz-input-group>
+                <nz-form-item>
+                  <nz-form-control
+                    nzErrorTip="Tên keypair không được chứa ký tự đặc biệt, chữ cái phải trong bảng tiếng anh">
+                    <textarea nz-input [nzAutosize]="{ minRows: 1 }" placeholder="Vui lòng nhập thông tin"
+                              maxlength="20" formControlName="keypair_name_2"></textarea>
+                  </nz-form-control>
+                </nz-form-item>
+              </nz-input-group>
+              <h4 style="padding-top: 20px">
+                Tên Public Key
+                <span nz-typography nzType="danger" style="color: red">*</span>
+              </h4>
+              <nz-input-group>
+                <nz-form-item>
+                  <nz-form-control
+                    nzErrorTip="Trường dữ liệu không thể bỏ trống">
+                    <textarea formControlName="public_key" nz-input [nzAutosize]="{ minRows: 3 }"
+                              placeholder="Nhập public key"></textarea>
+                  </nz-form-control>
+                </nz-form-item>
+              </nz-input-group>
+            </nz-tab>
+          </nz-tabset>
+        </ng-container>
+      </nz-modal>
+    </form>
+  </nz-form-control>
+
+  <!-- chi tiết  -->
+  <nz-modal [(nzVisible)]="isVisibleDetail" nzTitle="Chi tiết Key pair" (nzOnCancel)="handleCancel(null)"
+            [nzOkText]="null"
+            nzCancelText="Quay lại" [nzStyle]="modalStyle">
+    <ng-container *nzModalContent>
+      <h4>Tên key pair:</h4>
+      <p>{{ data.name }}</p>
+      <h4>Public key:</h4>
+      <p>{{ data.publicKey }}</p>
+    </ng-container>
+  </nz-modal>
+</nz-card>

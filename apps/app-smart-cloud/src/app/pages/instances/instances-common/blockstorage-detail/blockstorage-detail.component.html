@@ -1,0 +1,67 @@
+<nz-card
+  [nzBordered]="false"
+  nzTitle="
+Block Storage"
+>
+  <div class="ant-table">
+    <nz-table
+      [nzData]="listOfDataBlockStorage"
+      [nzLoading]="loading"
+      [nzShowPagination]="false"
+    >
+      <thead>
+        <tr>
+          <th>Loại ổ cứng</th>
+          <th>Tên Volume</th>
+          <th>Dung lượng (GB)</th>
+          <th>Trạng thái Volume</th>
+          <th>Kiểu Volume</th>
+          <th>Giá theo tháng (VNĐ)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody class="ant-table-tbody">
+        <tr *ngFor="let data of listOfDataBlockStorage">
+          <td>
+            <label *ngIf="data.volumeType == 'ssd'"> SSD </label>
+            <label *ngIf="data.volumeType == 'hdd'"> HDD </label>
+          </td>
+          <td>
+            <label class="text-blue">
+              {{ data.name }}
+            </label>
+          </td>
+          <td>
+            <label>
+              {{ data.sizeInGB }}
+            </label>
+          </td>
+          <td>
+            <label *ngIf="data.status == 'KHOITAO'" style="color: #52c41a">
+              KHỞI TẠO
+            </label>
+          </td>
+          <td>
+            <label *ngIf="data.bootable">
+              <i nz-icon nzType="hdd"></i>
+              VOLUME ROOT
+            </label>
+            <label *ngIf="!data.bootable">
+              <img
+                style="width: 8%; height: 8%"
+                src="assets/imgs/attach_volume.png"
+                alt=""
+              />
+              VOLUME GẮN THÊM
+            </label>
+          </td>
+          <td>
+            <label>
+              {{ data.price }}
+            </label>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+</nz-card>

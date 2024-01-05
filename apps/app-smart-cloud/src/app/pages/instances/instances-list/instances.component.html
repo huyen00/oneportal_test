@@ -1,0 +1,310 @@
+<page-header
+  [content]="content"
+  [breadcrumb]="breadcrumb"
+  [action]="action"
+  [title]="'Danh sách máy ảo'"
+>
+  <ng-template #breadcrumb>
+    <nz-breadcrumb>
+      <nz-breadcrumb-item><a [routerLink]="['/']">Home</a></nz-breadcrumb-item>
+      <nz-breadcrumb-item> Quản lý máy ảo </nz-breadcrumb-item>
+    </nz-breadcrumb>
+  </ng-template>
+  <ng-template #action>
+    <div class="alain-custom-action text-right">
+      <region-select-dropdown
+        (valueChanged)="onRegionChange($event)"
+      ></region-select-dropdown>
+      <project-select-dropdown
+        [regionId]="region"
+        (valueChanged)="onProjectChange($event)"
+      ></project-select-dropdown>
+    </div>
+  </ng-template>
+
+  <ng-template #content>
+    <nz-row *ngIf="isSearch">
+      <nz-col style="width: 70%">
+        <nz-form-label> Trạng thái máy ảo </nz-form-label>
+        <nz-select
+          [ngModel]="searchParam.status"
+          [nzPlaceHolder]="'Trạng thái máy ảo'"
+          [nzShowSearch]="false"
+          style="width: 160px"
+          (ngModelChange)="changeFilterStatus($event)"
+        >
+          <nz-option
+            *ngFor="let i of filterStatus"
+            [nzLabel]="i.text"
+            [nzValue]="i.value"
+          />
+        </nz-select>
+
+        <nz-input-group nzSearch nzSize="default" [nzAddOnAfter]="suffixButton">
+          <input
+            type="text"
+            nz-input
+            placeholder="Tìm kiếm tên máy ảo, gói cấu hình ..."
+            [ngModel]="searchParam.name"
+            (ngModelChange)="changeName($event)"
+            style="width: 300px; margin-left: 10px"
+          />
+        </nz-input-group>
+        <ng-template #suffixButton>
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="default"
+            nzSearch
+            (click)="getDataList()"
+          >
+            <i nz-icon nzType="search"></i>
+            Search
+          </button>
+        </ng-template>
+      </nz-col>
+      <nz-col class="text-right" style="width: 30%">
+        <button
+          class="bg-success border-success"
+          nz-button
+          nzType="primary"
+          (click)="navigateToCreate()"
+        >
+          <span
+            nz-icon
+            nzType="plus"
+            nzTheme="outline"
+            style="margin-right: 10px"
+          >
+          </span>
+          Tạo mới
+        </button>
+      </nz-col>
+    </nz-row>
+  </ng-template>
+</page-header>
+
+<div class="normal-table-wrap" *ngIf="!activeCreate">
+  <nz-table
+    #ajaxTable3
+    nzShowSizeChanger
+    [nzFrontPagination]="false"
+    [nzData]="dataList"
+    [nzLoading]="loading"
+    [nzTotal]="total"
+    [(nzPageIndex)]="pageIndex"
+    [(nzPageSize)]="pageSize"
+    (nzPageIndexChange)="getDataList()"
+    (nzPageSizeChange)="getDataList(true)"
+  >
+    <thead>
+      <tr>
+        <th>Tên máy ảo</th>
+        <th>Gói cấu hình</th>
+        <th>Trạng thái máy ảo</th>
+        <th>Trạng thái tác vụ</th>
+        <th>IP LAN</th>
+        <th>IP Public</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let data of ajaxTable3.data">
+        <td class="text-blue" (click)="navigateToDetail(data.id)">
+          {{ data.name }}
+        </td>
+        <td>
+          {{ data.flavorName }}
+          <!-- flavorId với flavorCloudId(mã dưới hệ thống openstack) ạ -->
+        </td>
+        <td>
+          <div>
+            {{ getStatus(data.status) }}
+          </div>
+        </td>
+        <td>{{ data.taskState }}</td>
+        <td>{{ data.ipPrivate }}</td>
+        <td>{{ data.ipPublic }}</td>
+        <td>
+          <nz-select
+            [nzPlaceHolder]="'Chọn thao tác'"
+            ngModel="selectedOptionAction"
+            name="selectAction"
+            (ngModelChange)="showModal($event, data)"
+          >
+            <nz-option
+              nzValue="1"
+              nzLabel="Tạo Backup"
+              (click)="navigateToCreateBackup(data.id)"
+            ></nz-option>
+            <nz-option nzValue="2" nzLabel="Tạo lịch Backup"></nz-option>
+            <nz-option
+              nzValue="3"
+              nzLabel="Chỉnh sửa Security Group"
+            ></nz-option>
+            <nz-option nzValue="4" nzLabel="Chỉnh sửa"></nz-option>
+            <nz-option nzValue="5" nzLabel="Gắn vào VLAN"></nz-option>
+            <nz-option nzValue="6" nzLabel="Gỡ khỏi VLAN"></nz-option>
+            <nz-option nzValue="7" nzLabel="Khởi động lại"></nz-option>
+            <nz-option nzValue="8" nzLabel="Tắt máy ảo"></nz-option>
+            <nz-option nzValue="9" nzLabel="RESCUE"></nz-option>
+          </nz-select>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</div>
+
+<div class="normal-table-wrap" *ngIf="activeCreate && isSearch">
+  <nz-table #ajaxTable3 [nzData]="emptyList" [nzLoading]="loading">
+    <thead>
+      <tr>
+        <th>Tên máy ảo</th>
+        <th>Gói cấu hình</th>
+        <th>Trạng thái máy ảo</th>
+        <th>Trạng thái tác vụ</th>
+        <th>IP LAN</th>
+        <th>IP Public</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </nz-table>
+</div>
+
+<div *ngIf="!loading && activeCreate && !isSearch">
+  <nz-card>
+    <result>
+      <img
+        nz-image
+        style="height: 100%; width: 100%"
+        nzSrc="assets/imgs/blank_vm.png"
+        alt=""
+      />
+
+      <button nz-button [nzType]="'primary'" (click)="navigateToCreate()">
+        Khởi tạo ngay
+      </button>
+    </result>
+  </nz-card>
+</div>
+
+<nz-modal
+  [(nzVisible)]="isVisibleGanVLAN"
+  nzTitle="Gắn VLAN"
+  (nzOnCancel)="handleCancelGanVLAN()"
+  (nzOnOk)="handleOkGanVLAN()"
+  nzOkText="Xác nhận"
+  nzCancelText="Hủy"
+>
+  <ng-container *nzModalContent>
+    <nz-form-item>
+      <nz-form-label>Danh sách VLAN</nz-form-label>
+      <nz-form-control class="text-right">
+        <nz-select
+          [nzPlaceHolder]="'-- Chọn VLAN --'"
+          [nzShowSearch]="true"
+          style="width: 340px"
+        >
+          <nz-option
+            *ngFor="let i of listVLAN"
+            [nzLabel]="i.text"
+            [nzValue]="i.id"
+          />
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+    <nz-form-item>
+      <div>
+        <a (click)="clickIPAddress()"
+          >Nhập IP Address <i *ngIf="!isExpand" nz-icon nzType="down"></i
+          ><i *ngIf="isExpand" nz-icon nzType="up"></i
+        ></a>
+      </div>
+    </nz-form-item>
+    <nz-form-item *ngIf="isExpand">
+      <nz-form-label>Danh sách Subnet</nz-form-label>
+      <nz-form-control class="text-right">
+        <nz-select
+          [nzPlaceHolder]="'-- Chọn Subnet --'"
+          [nzShowSearch]="true"
+          style="width: 340px"
+        >
+          <nz-option
+            *ngFor="let i of listSubnet"
+            [nzLabel]="i.text"
+            [nzValue]="i.id"
+          />
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+    <nz-form-item *ngIf="isExpand">
+      <nz-form-label>Địa chỉ IP</nz-form-label>
+      <nz-form-control class="text-right">
+        <nz-select
+          [nzPlaceHolder]="'-- Chọn địa chỉ IP --'"
+          [nzShowSearch]="true"
+          style="width: 340px"
+        >
+          <nz-option
+            *ngFor="let i of listIPAddress"
+            [nzLabel]="i.text"
+            [nzValue]="i.id"
+          />
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+    <nz-alert
+      nzType="warning"
+      [nzMessage]="customTemplateMessageGanVLAN"
+      nzShowIcon
+    ></nz-alert>
+    <ng-template #customTemplateMessageGanVLAN>
+      <div>
+        Trong trường hợp 1 Network của quý khách có nhiều subnet, quý khách cần
+        lựa chọn subnet và điền IP muốn gán cho máy ảo. Khi quý khách nhạp IP
+        vui lòng chọn IP chưa được sửa dụng bởi máy ảo nào và IP này thuộc dải
+        IP được cấu hình trong Subnet tương ứng
+      </div>
+    </ng-template>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [(nzVisible)]="isVisibleGoKhoiVLAN"
+  nzTitle="Gỡ khỏi VLAN"
+  (nzOnCancel)="handleCancelGoKhoiVLAN()"
+  (nzOnOk)="handleOkGoKhoiVLAN()"
+  nzOkText="Xác nhận"
+  nzCancelText="Hủy"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      nzType="warning"
+      [nzMessage]="customTemplateMessageGanVLAN"
+      nzShowIcon
+    ></nz-alert>
+    <ng-template #customTemplateMessageGanVLAN>
+      <div>
+        Mỗi kết nối từ máy ảo với VLAN tương ứng với 1 IP được cấp, lựa chọn IP
+        từ danh sách dưới đây để thực hiện gỡ kết nối máy ảo khỏi VLAN
+      </div>
+    </ng-template>
+    <br />
+    <nz-form-item>
+      <nz-form-label>Danh sách IP trên VLAN</nz-form-label>
+      <nz-form-control>
+        <nz-select
+          [nzPlaceHolder]="'-- Chọn địa chỉ IP --'"
+          [nzShowSearch]="true"
+        >
+          <nz-option
+            *ngFor="let i of listIPAddressOnVLAN"
+            [nzLabel]="i.text"
+            [nzValue]="i.id"
+          />
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+  </ng-container>
+</nz-modal>

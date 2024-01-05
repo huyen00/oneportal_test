@@ -1,0 +1,31 @@
+<div class="alain-default__content-title">
+  <h1>
+    Dashboard
+    <small>Welcome !</small>
+  </h1>
+
+  <div class="text-right">
+    <region-select-dropdown (valueChanged)="onRegionChange($event)"></region-select-dropdown>
+    <project-select-dropdown (valueChanged)="onProjectChange($event)" [regionId]="selectedRegion"></project-select-dropdown>
+  </div>
+</div>
+<div nz-row nzGutter="16">
+  <div nz-col nzXs="24" nzSm="12" nzMd="6" class="mb-md">
+    <div nz-row nzType="flex" nzAlign="middle" class="bg-primary rounded-md">
+      <div nz-col nzSpan="12" class="p-md text-white">
+        <div class="h2 mt0">123,456</div>
+        <p class="text-nowrap mb0">Website Traffics</p>
+      </div>
+      <div nz-col nzSpan="12">
+        />
+      </div>
+    </div>
+  </div>
+
+  <ngx-json-viewer [json]="someObject"></ngx-json-viewer>
+
+  <json-editor [options]="editorOptions" [data]="initialData" (change)="showJson($event)"></json-editor>
+  <div>{{ visibleData | json }}</div>
+
+</div>
+

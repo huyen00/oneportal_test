@@ -1,0 +1,147 @@
+<page-header [content]="content"
+             [breadcrumb]="breadcrumb"
+             [action]="action"
+             [title]="'Danh sách Backup VM'">
+  <ng-template #breadcrumb>
+    <nz-breadcrumb>
+      <nz-breadcrumb-item>
+        <a [routerLink]="['/']">Home</a>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>
+        <a [routerLink]="['/']">Dịch vụ</a>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>
+        <a [routerLink]="'/app-smart-cloud/backup-vm'">
+          Backup VM
+        </a></nz-breadcrumb-item>
+    </nz-breadcrumb>
+  </ng-template>
+  <ng-template #action>
+    <div class="alain-custom-action text-right">
+      <region-select-dropdown (valueChanged)="regionChanged($event)"></region-select-dropdown>
+      <project-select-dropdown (valueChanged)="projectChanged($event)"
+                               [regionId]="region"></project-select-dropdown>
+    </div>
+  </ng-template>
+
+  <ng-template #content>
+    <nz-space [nzSize]="24">
+      <div *nzSpaceItem>
+        <nz-select [(ngModel)]="selectedValue"
+                   (ngModelChange)="onChange($event)"
+                   nzPlaceHolder="Tất cả trạng thái">
+          <nz-option *ngFor="let item of status" [nzValue]="item.value" [nzLabel]="item.label"></nz-option>
+        </nz-select>
+      </div>
+      <div *nzSpaceItem>
+        <nz-input-group nzSearch [nzAddOnAfter]="suffixButton">
+          <input style="width: 400px;" [(ngModel)]="value" (input)="onInputChange($event.target['value'])" type="text"
+                 nz-input
+                 placeholder="Tìm kếm tên..."/>
+        </nz-input-group>
+        <ng-template #suffixButton>
+          <button nz-button nzType="primary" nzSearch (click)="getListBackupVM()">
+            <span nz-icon nzType="search" nzTheme="outline"></span>
+            Search
+          </button>
+        </ng-template>
+      </div>
+    </nz-space>
+  </ng-template>
+</page-header>
+
+<nz-content>
+  <nz-card>
+    <nz-table #tableBackupVM
+              [nzData]="collection.records"
+              nzShowSizeChanger
+              [nzFrontPagination]="false"
+              [nzTotal]="collection.totalCount"
+              [nzPageSize]="collection.pageSize"
+              [nzPageIndex]="collection.currentPage"
+              [nzLoading]="isLoading"
+              (nzQueryParams)="onQueryParamsChange($event)"
+    >
+      <thead>
+      <tr>
+        <th nzAlign="center" class="text-th">Tên</th>
+        <th nzAlign="center" class="text-th">VM gốc</th>
+        <th nzAlign="center" class="text-th">Dung luợng</th>
+        <th nzAlign="center" class="text-th">Gói backup</th>
+        <th nzAlign="center" class="text-th">Thời gian tạo</th>
+        <th nzAlign="center" class="text-th">Hết hạn</th>
+        <th nzAlign="center" class="text-th">Trạng thái</th>
+        <th nzAlign="center" class="text-th">Trạng thái tác vụ</th>
+        <th nzAlign="center" class="text-th">Thao tác</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let data of tableBackupVM.data">
+        <td nzAlign="center"><a (click)="navigateToDetail(data.id)">{{ data.name }}</a></td>
+        <td nzAlign="center"> {{ data.instanceName }}</td>
+        <td nzAlign="center">{{ data.size }} GB</td>
+        <td nzAlign="center">{{ data.backupPackageName }}</td>
+        <td nzAlign="center">{{ data.creationDate | date: "HH:mm:ss - dd/MM/yyyy" }}</td>
+        <td nzAlign="center">{{ data.expirationDate | date: "HH:mm:ss - dd/MM/yyyy" }}</td>
+        <td nzAlign="center">
+          <div class="status" [ngSwitch]="data.status">
+                                          <span class="available" *ngSwitchCase="'AVAILABLE'">
+                                            Hoạt động
+                                          </span>
+            <span class="suspended" *ngSwitchCase="'SUSPENDED'">
+                                            Tạm dừng
+                                          </span>
+            <span class="available" *ngSwitchCase="'CREATING'">
+                                            Đang khởi tạo
+                                          </span>
+            <span class="suspended" *ngSwitchCase="'DELETING'">
+                                            Đang xóa
+                                          </span>
+          </div>
+        </td>
+        <td nzAlign="center">
+                                        <span *ngIf="data.serviceStatus === 'KHOITAO'">
+                                          -
+                                        </span>
+          <span *ngIf="data.serviceStatus !== 'KHOITAO'">{{ data.serviceStatus }}</span>
+        </td>
+        <td nzAlign="center">
+          <div [ngSwitch]="data.status">
+            <div *ngSwitchCase="'AVAILABLE'">
+              <nz-select
+                [nzPlaceHolder]="'Chọn thao tác'"
+                ngModel="selectedOptionAction"
+                name="selectedAction"
+                (ngModelChange)="selectedActionChange($event, data)">
+                <nz-option
+                  nzValue="1"
+                  nzLabel="Restore"
+                  (click)="navigateToRestore(data.id)"
+                ></nz-option>
+                <nz-option nzValue="2" nzLabel="Xóa" (click)="showModalDelete(data.id)"></nz-option>
+                <one-portal-delete-backup-vm [isVisible]="isVisibleDelete"
+                                             [isLoading]="isLoading"
+                                             (onCancel)="handleCancelDelete()"
+                                             (onOk)="handleOkDelete()"/>
+              </nz-select>
+            </div>
+            <div *ngSwitchCase="'SUSPENDED'">
+              <button
+                nz-button
+                nzType="primary"
+                nzDanger
+                style="width: 100px" (click)="showModalDelete(data.id)">Xóa
+              </button>
+              <one-portal-delete-backup-vm [isVisible]="isVisibleDelete"
+                                           [isLoading]="isLoading"
+                                           (onCancel)="handleCancelDelete()"
+                                           (onOk)="handleOkDelete()"/>
+            </div>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </nz-table>
+
+  </nz-card>
+</nz-content>
